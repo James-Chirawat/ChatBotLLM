@@ -7,6 +7,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // เปิด React Strict Mode ช่วยจับโค้ดที่มีปัญหาตอนพัฒนา (ไม่มีผลกับ production)
   reactStrictMode: true,
+  // บังคับให้ไฟล์เอกสารที่แปลงจาก PDF ติดไปกับ webhook route ตอน deploy (Next.js ตามไฟล์ที่อ่านด้วย fs ไม่เจอเองเสมอไป)
+  outputFileTracingIncludes: {
+    "/api/webhooks/line": ["./knowledge/knowledge.txt"],
+  },
 };
 
 // export ให้ Next.js นำไปใช้

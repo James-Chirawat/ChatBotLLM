@@ -43,6 +43,11 @@ npm run dev                  # http://localhost:3000
 
 - **บุคลิกและกฎ:** แก้ไฟล์ [`src/config/bot-persona.ts`](src/config/bot-persona.ts) ต้อง deploy ใหม่หลังแก้
 - **ข้อมูลองค์กร:** ใส่ใน `BOT_INSTRUCTIONS` แต่ละองค์กรที่ fork ไปใช้ค่าต่างกันได้โดยไม่ต้องแก้โค้ด **ห้ามใส่ข้อมูลลับ** เพราะผู้ใช้อาจหลอกให้บอทเปิดเผยเนื้อหาใน prompt ได้
+- **ให้ตอบจากเอกสาร PDF:** วาง PDF ในโฟลเดอร์ `knowledge/` แล้วรัน `npm run knowledge` สคริปต์จะแปลงเป็น `knowledge/knowledge.txt` ซึ่งบอทแนบไปกับทุกคำถาม (ไม่ต้อง restart server) ให้เปิดไฟล์ .txt ตรวจภาษาไทยก่อนใช้ แก้ด้วยมือได้ถ้าเพี้ยน
+  - เอกสารทั้งก้อนถูกส่งไปกับ**ทุกคำถาม** ยิ่งยาวยิ่งแพงและช้า เพดานอยู่ที่ 100,000 ตัวอักษร ถ้าเอกสารยาวกว่านี้ควรเปลี่ยนไปใช้ RAG (ค้นเฉพาะส่วนที่เกี่ยวข้องก่อนส่ง)
+  - PDF ที่สแกนเป็นรูปจะไม่มีข้อความ ต้องทำ OCR ก่อน
+  - ถ้าอยากให้ตอบจากเอกสารอย่างเดียว ให้ตั้ง `QWEN_ENABLE_WEB_SEARCH=false`
+  - ห้ามใส่เอกสารลับ เหตุผลเดียวกับ `BOT_INSTRUCTIONS` และอย่าลืม commit `knowledge/knowledge.txt` ถ้า deploy จาก git
 - **เปลี่ยนไปใช้ AI เจ้าอื่น:** สร้างคลาสใหม่ที่ implements `AnswerProvider` ([`answer-provider.ts`](src/lib/ai/answer-provider.ts)) วางไว้ข้าง `QwenAnswerProvider` แล้วเปลี่ยนจุดที่สร้าง provider ใน webhook service
 - **เพิ่มความจำแชท:** เพิ่มฐานข้อมูล แล้วส่งประวัติการคุยสั้น ๆ เข้า `AnswerService`
 

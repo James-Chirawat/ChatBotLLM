@@ -2,6 +2,8 @@
 
 // ดึงฟังก์ชันอ่านค่าตั้งค่าต่าง ๆ จาก env
 import { getBotInstructions, getLineConfig, getQwenConfig } from "@/config/runtime-config";
+// ดึงฟังก์ชันอ่านเอกสารที่แปลงจาก PDF
+import { getKnowledgeText } from "@/config/knowledge";
 // ดึง provider ของ Qwen
 import { QwenAnswerProvider } from "@/lib/ai/qwen-answer-provider";
 // ดึงฟังก์ชันเรียก LINE API
@@ -48,8 +50,8 @@ export async function handleLineEvent(event: LineWebhookEvent): Promise<void> {
   try {
     // สร้าง provider ของ Qwen จากค่าตั้งค่า
     const provider = new QwenAnswerProvider(getQwenConfig());
-    // สร้าง service โดยส่ง provider และข้อมูลองค์กรเข้าไป
-    const answers = new AnswerService(provider, getBotInstructions());
+    // สร้าง service โดยส่ง provider ข้อมูลองค์กร และเอกสารจาก PDF เข้าไป
+    const answers = new AnswerService(provider, getBotInstructions(), await getKnowledgeText());
     // เลือกวิธีถามตามชนิดข้อความ
     const answer = isImageMessage
       // ถ้าเป็นรูป: ใช้คำสั่งสำเร็จรูปให้ AI อธิบายภาพ แล้วแนบรูปที่ดาวน์โหลดมา
