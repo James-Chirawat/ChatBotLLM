@@ -4,6 +4,8 @@ Starter project สำหรับเรียนรู้และต่อย�
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Vitest · ไม่มีฐานข้อมูล
 
+**สไลด์ประกอบการสอน:** [เปิดใน Google Slides](https://docs.google.com/presentation/d/1iPtyJh37vYdwBnf0hEcenaznbXa6pGdlNHXVH_WgCzY/edit?usp=sharing)
+
 ## Flow การทำงาน
 
 ![Flow ตั้งแต่ผู้ใช้พิมพ์จนบอทตอบ](docs/flowsystem.png)
