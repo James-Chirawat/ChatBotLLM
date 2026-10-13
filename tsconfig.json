@@ -1,41 +1,71 @@
+// ตั้งค่า TypeScript (ไฟล์นี้รองรับคอมเมนต์ และ Next.js อาจเพิ่มค่าบางตัวให้อัตโนมัติตอนรัน dev/build)
 {
+  // ตัวเลือกของ compiler
   "compilerOptions": {
+    // เวอร์ชัน JavaScript ที่ใช้ตรวจ syntax
     "target": "ES2024",
+    // type ของ API ที่มีให้ใช้
     "lib": [
+      // API ของเบราว์เซอร์ เช่น fetch, Request, Response
       "dom",
+      // API สำหรับวนลูปบน DOM collection
       "dom.iterable",
+      // ฟีเจอร์ JavaScript ใหม่ล่าสุด
       "esnext"
     ],
+    // เปิดการตรวจแบบเข้มงวดทั้งหมด เช่น ห้ามใช้ค่า null โดยไม่เช็คก่อน
     "strict": true,
+    // ข้ามการตรวจไฟล์ .d.ts ของไลบรารีเพื่อให้ตรวจเร็วขึ้น
     "skipLibCheck": true,
+    // tsc ใช้ตรวจ type อย่างเดียว ไม่สร้างไฟล์ (Next.js คอมไพล์เอง)
     "noEmit": true,
+    // ใช้ระบบ import/export แบบ ES modules
     "module": "esnext",
+    // หาไฟล์ตอน import ด้วยวิธีเดียวกับ bundler
     "moduleResolution": "bundler",
+    // import ไฟล์ .json ได้
     "resolveJsonModule": true,
+    // ให้แต่ละไฟล์คอมไพล์แยกกันได้ (bundler ต้องการ)
     "isolatedModules": true,
+    // แปลง JSX ด้วย runtime ใหม่ของ React ไม่ต้อง import React ในทุกไฟล์
     "jsx": "react-jsx",
+    // เก็บผลการตรวจครั้งก่อนไว้ใน tsconfig.tsbuildinfo เพื่อให้ตรวจรอบต่อไปเร็วขึ้น
     "incremental": true,
+    // ปลั๊กอินที่ทำงานใน editor
     "plugins": [
       {
+        // ปลั๊กอินของ Next.js ช่วยตรวจการใช้งานเฉพาะของ Next ใน editor
         "name": "next"
       }
     ],
+    // ตั้งชื่อย่อของ path
     "paths": {
+      // ให้ "@/xxx" หมายถึง "./src/xxx" เช่น "@/config/runtime-config"
       "@/*": [
         "./src/*"
       ]
     },
+    // อนุญาตไฟล์ .js (Next.js จะเติมกลับมาให้เองถ้าลบออก จึงคงไว้)
     "allowJs": true,
+    // ให้ import โมดูลแบบ CommonJS ได้สะดวกขึ้น
     "esModuleInterop": true
   },
+  // ไฟล์ที่ให้ TypeScript ตรวจ
   "include": [
+    // type พื้นฐานที่ Next.js สร้างให้
     "next-env.d.ts",
+    // โค้ด TypeScript ทั้งหมดใน src
     "src/**/*.ts",
+    // ไฟล์ React (TSX) ทั้งหมดใน src
     "src/**/*.tsx",
+    // type ที่ Next.js สร้างตอน build
     ".next/types/**/*.ts",
+    // type ที่ Next.js สร้างตอน dev
     ".next/dev/types/**/*.ts"
   ],
+  // ไฟล์ที่ไม่ต้องตรวจ
   "exclude": [
+    // ไลบรารีภายนอก
     "node_modules"
   ]
 }

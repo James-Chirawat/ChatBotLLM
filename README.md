@@ -1,89 +1,68 @@
 # LINE + Qwen Secretary Bot
 
-Starter project สำหรับสอนและนำไปต่อยอด: รับข้อความจาก LINE Official Account, ตรวจสอบลายเซ็น webhook, ส่งคำถามไป Qwen และตอบกลับในบุคลิกเลขานุการผู้หญิงที่สุภาพ
+Starter project สำหรับเรียนรู้และต่อยอด: แชทบอท LINE Official Account ชื่อ "น้องมีนา" ที่ตอบคำถามด้วย Qwen รองรับทั้งข้อความและรูปภาพ และค้นเว็บได้เมื่อคำถามต้องใช้ข้อมูลปัจจุบัน
 
-## Architecture
+**Stack:** Next.js 16 (App Router) · TypeScript · Vitest · ไม่มีฐานข้อมูล
 
-```text
-LINE webhook
-  -> app/api/webhooks/line/route.ts       verify raw-body HMAC signature
-  -> services/line-webhook.service.ts     choose supported events + reply flow
-      -> lib/line/client.ts                ephemeral token, loading, and image download
-      -> services/answer.service.ts        persona and organization instructions
-          -> lib/ai/qwen-answer-provider.ts Qwen Responses API + image + web search
-```
+## Flow การทำงาน
 
-The app is deliberately **stateless**. It sends only the current text message to Qwen; it does not save chat history, user IDs, or LINE profiles. That keeps the first lesson small and privacy-friendly. Add a repository and database only when you need a deliberate conversation-memory feature.
+![Flow ตั้งแต่ผู้ใช้พิมพ์จนบอทตอบ](docs/flowsystem.png)
 
-## Quick start
+| ขั้น | ไฟล์ | หน้าที่ |
+|---|---|---|
+| 3–4 | [`src/app/api/webhooks/line/route.ts`](src/app/api/webhooks/line/route.ts) | อ่าน body ดิบ แล้วตรวจลายเซ็น HMAC ถ้าไม่ผ่านตอบ 401 |
+| 5–6 | [`src/services/line-webhook.service.ts`](src/services/line-webhook.service.ts) | คัดเฉพาะข้อความและรูป แสดงสถานะกำลังพิมพ์ ดาวน์โหลดรูป แล้วส่งคำตอบกลับ |
+| 7 | [`src/services/answer.service.ts`](src/services/answer.service.ts) | ต่อ persona กับ `BOT_INSTRUCTIONS` เป็น system prompt |
+| 8 | [`src/lib/ai/qwen-answer-provider.ts`](src/lib/ai/qwen-answer-provider.ts) | เรียก Qwen Responses API พร้อม web search และกรองลิงก์อ้างอิง |
+| 9 | [`src/lib/line/client.ts`](src/lib/line/client.ts) | ขอ token ใหม่ทุกครั้งที่เรียก LINE API (ตอบกลับ, กำลังพิมพ์, ดาวน์โหลดรูป) |
+
+แอปเป็นแบบ **stateless**: ไม่เก็บประวัติแชท userId หรือรูปภาพ ทุกข้อความถูกตอบแยกกัน บอทจึงจำบทสนทนาก่อนหน้าไม่ได้ ทุกบรรทัดในโค้ดมีคอมเมนต์ภาษาไทยอธิบายไว้
+
+## เริ่มต้นใช้งาน
+
+**ติดตั้งและตั้งค่า**
 
 ```bash
 npm install
-cp .env.example .env.local
-npm run dev
+cp .env.example .env.local   # แล้วใส่ค่าจริงใน .env.local
+npm run dev                  # http://localhost:3000
 ```
 
-Fill these server-only variables in `.env.local`:
+| ตัวแปร | จำเป็น | คำอธิบาย |
+|---|---|---|
+| `LINE_CHANNEL_ID`, `LINE_CHANNEL_SECRET` | ✅ | จาก LINE Developers Console → Messaging API channel |
+| `QWEN_API_KEY` | ✅ | จาก Alibaba Cloud Model Studio (DashScope) |
+| `QWEN_MODEL` | | ค่าเริ่มต้น `qwen3.8-flash` |
+| `QWEN_BASE_URL` | | ค่าเริ่มต้นเป็น endpoint สิงคโปร์ ต้องเป็นภูมิภาคเดียวกับ API key |
+| `QWEN_ENABLE_WEB_SEARCH` | | ตั้งเป็น `false` เพื่อปิดการค้นเว็บ ช่วยให้ตอบเร็วขึ้นและประหยัดค่าใช้จ่าย |
+| `BOT_INSTRUCTIONS` | | ข้อมูลขององค์กร เช่น เวลาทำการ หรือเบอร์ติดต่อ (ดูหัวข้อปรับแต่งบอท) |
 
-- `LINE_CHANNEL_ID` and `LINE_CHANNEL_SECRET` from the Messaging API channel.
-- `QWEN_API_KEY` from Alibaba Cloud Model Studio / DashScope.
-- `QWEN_MODEL` defaults to `qwen3.8-flash`.
-- `QWEN_BASE_URL` defaults to the Singapore OpenAI-compatible endpoint. Use the endpoint belonging to the same region/workspace as the key if yours differs.
-- `QWEN_ENABLE_WEB_SEARCH` defaults to `true`. Set it to `false` when you need lower latency/cost or want answers based only on the model and your instructions.
-- `BOT_INSTRUCTIONS` is an optional place for organisation facts, hours, contacts, or boundaries.
+## ปรับแต่งบอท
 
-Never commit `.env.local`, and never expose these values through `NEXT_PUBLIC_*` variables. The application does not store a channel access token. Immediately before each reply, it exchanges the Channel ID and Channel secret for a new LINE **stateless channel access token**.
+- **บุคลิกและกฎ:** แก้ไฟล์ [`src/config/bot-persona.ts`](src/config/bot-persona.ts) ต้อง deploy ใหม่หลังแก้
+- **ข้อมูลองค์กร:** ใส่ใน `BOT_INSTRUCTIONS` แต่ละองค์กรที่ fork ไปใช้ค่าต่างกันได้โดยไม่ต้องแก้โค้ด **ห้ามใส่ข้อมูลลับ** เพราะผู้ใช้อาจหลอกให้บอทเปิดเผยเนื้อหาใน prompt ได้
+- **เปลี่ยนไปใช้ AI เจ้าอื่น:** สร้างคลาสใหม่ที่ implements `AnswerProvider` ([`answer-provider.ts`](src/lib/ai/answer-provider.ts)) วางไว้ข้าง `QwenAnswerProvider` แล้วเปลี่ยนจุดที่สร้าง provider ใน webhook service
+- **เพิ่มความจำแชท:** เพิ่มฐานข้อมูล แล้วส่งประวัติการคุยสั้น ๆ เข้า `AnswerService`
 
-## Connect LINE
-
-1. Deploy the app to a public HTTPS URL (or use a tunnel while developing).
-2. In LINE Developers Console → Messaging API, set the webhook URL to `https://your-domain.com/api/webhooks/line`.
-3. Enable **Use webhook**, then press **Verify**.
-4. Turn off LINE Official Account Manager auto-replies if they conflict with the bot.
-5. Add the Official Account as a friend and send a text message.
-
-The route reads the raw request before parsing JSON and checks `x-line-signature` using HMAC-SHA256. Invalid requests are rejected before any model or LINE API call.
-
-When a user sends a text message in a one-to-one chat, the bot starts LINE's native loading animation before calling Qwen. It is set for 60 seconds but disappears as soon as the bot reply arrives. LINE doesn't support this animation in group or multi-person chats, so those conversations continue without it.
-
-## Images and current information
-
-- Send a JPEG, PNG, GIF, or WebP image in LINE and the bot downloads it with a temporary LINE token, keeps it only in request memory, and sends it to Qwen as a Base64 image input. Images larger than 5 MB are rejected before reaching Qwen.
-- Qwen is called through its Responses API with `web_search` and `web_extractor` tools enabled. The model decides when a current-information search is useful; it does not search for every ordinary message.
-- Qwen3.8 runs at `low` reasoning effort in this bot. Its default `xhigh` reasoning can consume the full response budget before a short LINE answer is produced.
-- When a search returns URL citations, the bot adds up to three source links after its answer. Citations are absent when no search was used.
-- An image sent separately from a text prompt is interpreted as “describe/read this image.” This starter remains stateless, so it does not join an image and a later message into a single turn.
-
-## Customise the assistant
-
-- Edit `src/config/bot-persona.ts` for voice, safety limits, or target language.
-- Set `BOT_INSTRUCTIONS` for changeable organisation data without a deployment code change.
-- Keep external integrations behind the `AnswerProvider` interface. Add another provider beside `QwenAnswerProvider` rather than putting provider code in the webhook route.
-- For chat memory, add `ConversationRepository` and pass only a short, privacy-reviewed recent history to `AnswerService`.
-
-## Verification
+## ตรวจสอบโค้ด
 
 ```bash
-npm run test
+npm run test        # unit test (ใช้ fetch ปลอม ไม่เรียก API จริง)
 npm run typecheck
 npm run build
 ```
 
-## Production notes
+## ข้อควรระวัง
 
-- A reply token is short-lived and can be used once. Keep model timeout low and avoid automatic retries on the same reply token.
-- Stateless channel access tokens last 15 minutes and cannot be revoked. This project deliberately does not cache them, but the Channel secret remains highly sensitive and must be rotated if compromised.
-- For higher traffic, acknowledge valid webhooks quickly and send events to a queue; persist event IDs to deduplicate webhook redelivery.
-- Add rate limiting before a public launch. Use a database/Redis-backed limiter when deploying more than one server instance.
-- Treat all user text as untrusted. Do not place secrets, private records, or privileged tool instructions into the prompt.
-- Images are transient input, but they are still transmitted to Qwen for analysis. Tell users not to send private IDs, medical records, or other sensitive images unless your privacy policy explicitly covers this use.
+- **ห้าม commit `.env` หรือ `.env.local`** และห้ามตั้งชื่อตัวแปรขึ้นต้นด้วย `NEXT_PUBLIC_` เพราะค่าจะหลุดไปถึงเบราว์เซอร์ ถ้า Channel secret หลุด ให้ออกค่าใหม่ทันที
+- **ยังไม่พร้อมใช้งานจริง** ก่อนเปิดให้คนทั่วไปใช้ ควรเพิ่มสิ่งเหล่านี้:
+  - rate limit ต่อผู้ใช้
+  - จำกัดขนาด request body
+  - ตอบ 200 ให้ LINE ทันที แล้วส่งงานต่อเข้า queue
+  - เก็บ `webhookEventId` ไว้กันการประมวลผล event ซ้ำ
+- รูปที่ผู้ใช้ส่งมาจะถูกส่งต่อไปให้ Qwen วิเคราะห์ ควรแจ้งผู้ใช้ไม่ให้ส่งเอกสารส่วนตัว
 
-## Sources
+## เอกสารอ้างอิง
 
-- [LINE: verify webhook signature](https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/)
-- [LINE: receive webhook events](https://developers.line.biz/en/docs/messaging-api/receiving-messages/)
-- [LINE: send reply messages](https://developers.line.biz/en/docs/messaging-api/sending-messages/)
-- [LINE: get user-sent image content](https://developers.line.biz/en/docs/messaging-api/receiving-messages/)
-- [LINE: issue stateless channel access token](https://developers.line.biz/en/reference/messaging-api/#issue-stateless-channel-access-token)
-- [Qwen: Responses API](https://help.aliyun.com/en/model-studio/qwen-api-via-openai-responses)
-- [Qwen: web search](https://help.aliyun.com/en/model-studio/web-search)
+- LINE: [ตรวจลายเซ็น webhook](https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/) · [รับ event](https://developers.line.biz/en/docs/messaging-api/receiving-messages/) · [ตอบข้อความ](https://developers.line.biz/en/docs/messaging-api/sending-messages/) · [stateless token](https://developers.line.biz/en/reference/messaging-api/#issue-stateless-channel-access-token)
+- Qwen: [Responses API](https://help.aliyun.com/en/model-studio/qwen-api-via-openai-responses) · [Web search](https://help.aliyun.com/en/model-studio/web-search)
